@@ -29,7 +29,7 @@ from servicex.code_generator_service import create_app
 import io
 import zipfile
 
-from servicex.code_generator_service.ast_translator import GenerateCodeException
+from servicex_codegen.code_generator import GenerateCodeException, GeneratedFileResult
 
 
 def get_zipfile_data(zip_data: bytes):
@@ -52,7 +52,8 @@ class TestGenerateCode:
         """Produce code for a simple good query"""
 
         mock_ast_translator = mocker.Mock()
-        mock_ast_translator.translate_text_ast_to_zip = mocker.Mock(return_value="hi")
+        mock_ast_translator.generate_code = mocker.Mock(
+            return_value=GeneratedFileResult(hash="1234", output_dir="/tmp/foo"))
 
         config = {
             'TARGET_BACKEND': 'uproot'
@@ -63,12 +64,12 @@ class TestGenerateCode:
 
         response = client.post("/servicex/generated-code", data=select_stmt)
         assert response.status_code == 200
-        mock_ast_translator.translate_text_ast_to_zip.assert_called_with(select_stmt)
+        mock_ast_translator.generate_code.assert_called()
 
     def test_post_codegen_error_query(self, mocker):
         """Post a query with a code-gen level error"""
         mock_ast_translator = mocker.Mock()
-        mock_ast_translator.translate_text_ast_to_zip = \
+        mock_ast_translator.generate_code = \
             mocker.Mock(side_effect=GenerateCodeException)
 
         config = {
